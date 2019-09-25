@@ -1,21 +1,23 @@
 from selenium import webdriver
+import time
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.common.exceptions import TimeoutException
-import pprint
 home = "https://akispetretzikis.com"
 
-def find_recipes(driver, i, category, links):                                           #i = ith category, category = the category link, links = 2D matrix with all the links of the categories and all recipe links for each category 
+
+def find_recipes(driver, i, category, links):    #i = ith category, category = the category link, links = 2D matrix with all the links of the categories and all recipe links for each category
     driver.get(category)
-    #show all results
-    te = nsee = sere = 0
-    while(True):
+    # show all results
+    te = nsee = sere = 0    # exception counters
+    while True:
         try:
             # WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.LINK_TEXT, "Show more recipes")))
-            driver.find_element_by_link_text('Show more recipes').click()
+            time.sleep(0.4)
+            driver.find_element_by_class_name('filter-select').click()
         except TimeoutException:
             te += 1
             print("TimeoutException: "+str(te))
@@ -41,7 +43,9 @@ def find_recipes(driver, i, category, links):                                   
 def create_links():
     links = [[]]
     categories_home = 'https://akispetretzikis.com/en/categories/p/kathgories-syntagwn'
-    driver = webdriver.Chrome()
+    options = webdriver.ChromeOptions()
+    options.add_argument('headless')
+    driver = webdriver.Chrome(options=options) # options=options
     driver.get(categories_home)
     number_of_categories = len(driver.find_elements_by_link_text('more'))
     for i in range(0, number_of_categories):
@@ -57,13 +61,7 @@ def create_links():
     driver.close()
     return links
 
-def pretty_print(matrix):
-    s = [[str(e) for e in row] for row in matrix]
-    lens = [max(map(len, col)) for col in zip(*s)]
-    fmt = '\t'.join('{{:{}}}'.format(x) for x in lens)
-    table = [fmt.format(*row) for row in s]
-    print('\n'.join(table))
 
-#links = create_links()
-#pretty_print(links)
-#print(links)
+# links = create_links()
+# pretty_print(links)
+# print(links)

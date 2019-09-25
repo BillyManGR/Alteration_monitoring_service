@@ -1,4 +1,4 @@
-# from Monitoring import monitoring
+from Monitoring import monitoring
 import sched
 import time
 import pytz
@@ -8,8 +8,12 @@ s = sched.scheduler(time.time, time.sleep)
 # Deep monitoring at the end of each day
 
 
-def calculate_delay(start):           # return delay in seconds
+def calculate_delay(start):           																# return delay in seconds
     return (start - datetime.now(pytz.timezone('Europe/Athens'))).total_seconds()
+
+
+def hour_rounder(t):																				# Rounds to next hour
+    return t.replace(second=0, microsecond=0, minute=0, hour=t.hour) + timedelta(hours=1)
 
 
 def scheduling(start, end):
@@ -27,15 +31,10 @@ def scheduling(start, end):
         s.enter(delay, 1, scheduling, (start, end,))                                                # call monitoring again in an hour
     # Do the monitoring
     print("Execute monitoring: ", now)
+    monitoring(False)
 
 
 def perform_checks(athens_now, start, end):                                                         # Check if will be done today or Start day is in the weekend
-    """print("Start is: ", end='')
-    print(start)
-    print("End is: ", end='')
-    print(end)
-    print("Athens now: ", end='')
-    print(athens_now)"""
     offset = 0                                                                                      # we do not expect a different start datetime
     start_day = start.strftime("%a")                                                                # What day is it today?
     # print("Start day is "+start_day)
@@ -44,9 +43,12 @@ def perform_checks(athens_now, start, end):                                     
     if start_day == "Sun":
         offset += 1                                                                                 # Skip today
     if offset == 0 and athens_now > start:                                                          # It is not weekend AND we are late
-        # print("In")
-        new_start = start + timedelta(days=1)                                                       # then provisional start is tomorrow
-        new_end = end + timedelta(days=1)
+        if athens_now + timedelta(hours=1) <= end:                                                  # but we have at least one hour until end
+            new_start = hour_rounder(athens_now)                                                    # so we can start the next hour from now
+            new_end = end                                                                           # and finish the same
+        else:
+            new_start = start + timedelta(days=1)                                                   # otherwise provisional start is tomorrow
+            new_end = end + timedelta(days=1)
         perform_checks(athens_now, new_start, new_end)                                              # Check tomorrow as well
         return new_start, new_end
     # print("Offset: "+str(offset))
