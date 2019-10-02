@@ -1,10 +1,13 @@
 from Recipe import Recipe
 from selenium import webdriver
+import re, sys
 from selenium.common.exceptions import NoSuchElementException
 
 
 def time_unit_check(item):
-    if "and" in item or "και" in item:
+    both_cond_en = ("hour" in item or "hours" in item) and "minutes" in item
+    both_cond_el = ("ώρα" in item or "ώρες" in item) and "λεπτά" in item
+    if "and" in item or "και" in item or both_cond_en or both_cond_el:
         return "both"
     try:
         return "minutes" if "'" in item or "min" in item or "minutes" in item or "λεπτά" in item or float(item) >= 60 else "hours"            
@@ -31,20 +34,31 @@ def extract_minute_value(minute, item):
 def get_final_value(item):
     # print("item: " + item)
     time_unit = time_unit_check(item)
-    if time_unit == "minutes":                                      # item is minute  
+    if time_unit == "minutes":                                              # item is minute
         # print("item is minute")
         minimum, maximum = extract_minute_value(True, item)                 # extract value
         min_value = float(minimum)
         max_value = float(maximum)
-    elif item == "":                                                # empty item
+    elif item == "":                                                        # empty item
         # print("Item is empty")
         min_value = max_value = 0
     elif time_unit == "both":                                               # item is both minute and hour
+        # print("Item in both")
         items = item.split(" and ") if "and" in item else item.split(" και ")
-        min0, max0 = extract_minute_value(False, items[0])            # hour part
-        min1, max1 = extract_minute_value(True, items[1])             # minute part
-        min_value = float(min0)*60 + float(min1)                    # add values
-        max_value = float(max0)*60 + float(max1)
+        # print(items)
+        if len(items) == 1:
+            values = re.findall(r"[-+]?\d*\.\d+|\d+", item)
+            print(values)
+            if len(values) == 1:                                            # Expected 2 values, got one
+                sys.exit("Parsing error! Expected 2 values, got one!")
+            else:
+                min_value = max_value = float(values[0])*60 + float(values[1])
+                # print("Min/Max value = "+str(min_value))
+        else:
+            min0, max0 = extract_minute_value(False, items[0])              # hour part
+            min1, max1 = extract_minute_value(True, items[1])               # minute part
+            min_value = float(min0)*60 + float(min1)                        # add values
+            max_value = float(max0)*60 + float(max1)
     else:                                                           # item is hours
         # print("item is hours")
         minimum, maximum = extract_minute_value(False, item)
@@ -121,7 +135,7 @@ def get_method_ingredients_tip(driver, option):
     ingredients_raw = elements[0].text
     ingredients = ingredients_raw.split("\n")
     if option == "method":
-       return method
+        return method
     elif option == "ingredients":
         return ingredients
     elif option == "tip":
@@ -159,7 +173,7 @@ def parse(url):
     return Recipe(url, title, cat, diet, tags, hands_on, hands_off, cook_time, total_time, portions, difficulty, ingredients, method, tip, rating, video)
 
 
-recipe = parse("https://akispetretzikis.com/en/categories/glyka/panakota-me-kafe-kai-rofhma-amygdaloy")
-recipe.simple_recipe_print()
+# recipe = parse("https://akispetretzikis.com/el/categories/zymarika/zymarika-me-keftedakia-galopoylas")
+# recipe.simple_recipe_print()
 # recipe.JSON_recipe_print()
-print(recipe.convert_to_JSON())
+# print(recipe.convert_to_JSON())
