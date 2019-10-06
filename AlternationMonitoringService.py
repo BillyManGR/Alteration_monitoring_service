@@ -1,4 +1,4 @@
-from Monitoring import monitoring
+from Crawler import crawl
 import sched
 import time
 import pytz
@@ -6,7 +6,8 @@ from datetime import datetime, timedelta
 s = sched.scheduler(time.time, time.sleep)
 # Lite monitoring every hour from 09:00 - 21:00 Greek time on working days
 # Deep monitoring at the end of each day
-
+# TODO: Change schedule. Apply deep and lite. Make lite get New recipes from webpages
+language = "Greek"
 
 def calculate_delay(start):           																# return delay in seconds
     return (start - datetime.now(pytz.timezone('Europe/Athens'))).total_seconds()
@@ -31,7 +32,7 @@ def scheduling(start, end):
         s.enter(delay, 1, scheduling, (start, end,))                                                # call monitoring again in an hour
     # Do the monitoring
     print("Execute monitoring: ", now)
-    monitoring(False)
+    crawl(language)
 
 
 def perform_checks(athens_now, start, end):                                                         # Check if will be done today or Start day is in the weekend

@@ -1,20 +1,32 @@
-from Crawler import create_links
+import sys
+from Parser import parse
+from databaseOperations import get_single_id, update_or_create
 
-def monitoring(deep):
-    links = create_links()
-    for i in links:
-        for j in range(1,len(i)):
-            url = i[j]
-            print("Monitoring url: "+url)
-            recipe = parse(url)
-            recipe.recipe_print()
-            #id = DB_check(url)
-            #if id>=0:       #exists
-            #    if deep:
-            ##        obj = parse(url)
-             #       if DB_check(id, obj):
-             #           continue
-             #       populate(Recipes & Ingredients, Recipe, id, obj)        #modify
-            #else:           # does not exist
-              #  obj = parse(url)
-               # populate(Recipes & Ingredients, Recipe, O)                  #add
+
+def monitor(database, url):
+    print("Monitoring url: "+url)
+    obj_id = get_single_id(database, "url", url)
+    print(obj_id)
+    if obj_id is None:
+        recipe = parse(url)
+        # print(recipe)
+        tries = 0
+        while True:
+            successful = update_or_create(database, obj_id, recipe)
+            tries += 1
+            if not successful:
+                print("Updating or creating '" + recipe.__getitem__("title") + "' entry was not "
+                    + "successful after "+str(tries)+" tries. Max 3 tries. Trying again")
+                if tries == 3:
+                    sys.exit("Max 3 failed tries reached! Aborting!")
+                else:
+                    continue
+            else:
+                print("Updating or creating '" + recipe.__getitem__("title")
+                      + "' entry was successful after " + str(tries) + " tries")
+                break
+
+
+# client, collection = get_collection()
+# monitor(collection, "https://akispetretzikis.com/en/categories/glykes-pites-tartes/pitakia-me-tachini")
+# close_client(client)

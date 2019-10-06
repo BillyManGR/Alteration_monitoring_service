@@ -1,4 +1,6 @@
-from datetime import datetime,timedelta, date
+from datetime import date
+
+
 class Recipe:
     
     def __init__(self, url, title, category, diet, tags, hands_on, hands_off, cook_time, total_time, portions, difficulty, ingredients, method, tip, rating, video_or_image):
@@ -38,11 +40,12 @@ class Recipe:
         print("Video: " + self.video_or_image)
         # Pending nutrition 
     
-    def JSON_recipe_print(self):
+    def json_recipe_print(self):
         print(serialize(self))
 
-    def convert_to_JSON(self):
+    def convert_to_json(self):
         return serialize(self)
+
 
 def serialize(obj):
     if isinstance(obj, date):

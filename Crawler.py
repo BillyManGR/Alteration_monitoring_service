@@ -1,22 +1,26 @@
 from selenium import webdriver
-import time
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+import time, datetime, traceback, logging, sys
+from databaseOperations import get_collection, close_client
+from Monitoring import monitor
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import ElementClickInterceptedException
 home = "https://akispetretzikis.com"
+language = "Greek"
 
 
-def find_recipes(driver, i, category, links):    #i = ith category, category = the category link, links = 2D matrix with all the links of the categories and all recipe links for each category
+def find_recipes(driver, database, category):    # Find all the recipes of the given category
     driver.get(category)
-    # show all results
-    te = nsee = sere = 0    # exception counters
+    driver.save_screenshot("file_name.png")
+    te = nsee = sere = ecie = 0    # exception counters
     while True:
+        if driver.current_url != category:
+            print("Current url != category")
+            driver.get(category)
+            time.sleep(1.5)
         try:
-            # WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.LINK_TEXT, "Show more recipes")))
-            time.sleep(0.4)
+            time.sleep(0.5)
             driver.find_element_by_class_name('filter-select').click()
         except TimeoutException:
             te += 1
@@ -29,39 +33,62 @@ def find_recipes(driver, i, category, links):    #i = ith category, category = t
         except StaleElementReferenceException:
             sere += 1
             print("StaleElementReferenceException: "+str(sere))
+            # driver.save_screenshot("file_name Stale"+str(sere)+".png")
             continue
-    # populate the links
-    first_recipe = (driver.find_element_by_link_text('Read more')).get_attribute("href")
-    print("First recipe: "+first_recipe)
-    links[i].append(first_recipe)
-    # print(first_recipe)
-    rest_recipes = driver.find_elements_by_link_text('more')
+        except ElementClickInterceptedException:
+            ecie += 1
+            print("ElementClickInterceptedException")
+            # driver.save_screenshot("file_name Intercepted"+str(ecie)+".png")
+            continue
+    sum_of_recipes = 1
+    while True:
+        try:
+            time.sleep(0.4)
+            first_recipe = driver.find_element_by_class_name("read_more").get_attribute("href")
+            break
+        except NoSuchElementException:
+            print("Could not find first recipe")
+            continue
+    # print("First recipe: "+first_recipe)
+    monitor(database, first_recipe)
+    rest_recipes = driver.find_elements_by_class_name('more.hidden-xs')
     for x in rest_recipes:
-        links[i].append(x.get_attribute("href"))
+        sum_of_recipes += 1
+        print("Monitoring recipe no "+str(sum_of_recipes))
+        monitor(database, x.get_attribute("href"))
+    return sum_of_recipes
     
 
-def create_links():
-    links = [[]]
-    categories_home = 'https://akispetretzikis.com/en/categories/p/kathgories-syntagwn'
+def crawl(lang):
+    categories = []
+    if lang == "Greek":
+        categories_home = 'https://akispetretzikis.com/el/categories/p/kathgories-syntagwn'
+    elif lang == "English":
+        categories_home = 'https://akispetretzikis.com/en/categories/p/kathgories-syntagwn'
+    else:
+        sys.exit("Wrong language has been given for crawling. Choose either 'Greek' or 'English'")
+    print(lang + " language has been chosen for crawling")
     options = webdriver.ChromeOptions()
     options.add_argument('headless')
-    driver = webdriver.Chrome(options=options) # options=options
+    driver = webdriver.Chrome(options=options)  # options=options
+    # driver = webdriver.Chrome()
     driver.get(categories_home)
-    number_of_categories = len(driver.find_elements_by_link_text('more'))
-    for i in range(0, number_of_categories):
-        driver.get(categories_home)
-        category_links = driver.find_elements_by_link_text('more')
-        current_category = category_links[i].get_attribute("href")
+    client, database = get_collection()
+    for category in driver.find_elements_by_class_name('more'):
+        categories.append(category.find_element_by_tag_name('a').get_attribute("href"))
+    for current_category in categories:
         print("Current category: "+current_category)
-        links[i].append(current_category)
-        find_recipes(driver, i,current_category,links)
-        print("Number of recipes: "+str(len(links[i])-1))
-        if i != number_of_categories-1:
-            links.append([])
+        no_of_recipes = find_recipes(driver, database, current_category)
+        print("Number of recipes of category " + current_category + " = " + str(no_of_recipes))
     driver.close()
-    return links
+    close_client(client)
 
 
-# links = create_links()
-# pretty_print(links)
-# print(links)
+start = datetime.datetime.now()
+try:
+    crawl(language)
+except Exception as e:
+    print("Did not end as expected")
+    logging.error(traceback.format_exc())
+end = datetime.datetime.now()
+print("Monitoring time: " + str(end - start))
