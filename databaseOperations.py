@@ -8,7 +8,7 @@ def insert_data(collection, data):
 
 
 def get_collection():                     # CONNECT TO DATABASE
-    client = pymongo.MongoClient('mongodb+srv://user:userpass@cookeapp-mhjnk.gcp.mongodb.net/test?retryWrites=true&w=majority')
+    client = pymongo.MongoClient('mongodb+srv://billy:grande@cookeapp-mhjnk.gcp.mongodb.net/test?retryWrites=true&w=majority')
     database = client.test
     database = client['Cooker']
     collection = database['Recipes']
