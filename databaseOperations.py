@@ -39,7 +39,7 @@ def get_single_id(collection, attribute, value):
     """
     # print("Criterion: "+attribute)
     # print("Value: "+value)
-    data = collection.find_one({attribute: value}) # TODO: Fix find_one. Explore more powerful options like find_one and replace
+    data = collection.find_one({attribute: value})
     return data.get('_id') if data is not None else None
 
 

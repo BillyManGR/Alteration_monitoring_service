@@ -8,8 +8,8 @@ from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import ElementClickInterceptedException
 
 home = "https://akispetretzikis.com"
-#language = "English"
-#first = True
+# language = "English"
+# first = True
 
 
 def show_more_recipes(driver, page):
@@ -127,6 +127,10 @@ def crawl(lang, first_time):
         lite_crawl(lang, driver, database)
     driver.close()
     close_client(client)
+
+
+crawl("Greek", False)
+crawl("English", False)
 
 
 def automated_crawling(language, first):
